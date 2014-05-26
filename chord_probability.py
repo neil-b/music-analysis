@@ -39,11 +39,12 @@ def readChordData(fileName, transpose=0):
 
   chordData must be an array of tuples following the format: (startTime, endTime, chord). This function assumes chordData is ordered by startTime.
 
-  returns (jointProbabilityTable, conditionalProbabilityTable)
+  returns (jointProbabilityTable, conditionalProbabilityTable, jointSampleCounts, conditionalSampleCounts)
 """
 def generateProbabilityTables(chordData):
   # calculate joint probabilities
   jointProbabilityTable = collections.Counter()
+  jointSampleCounts = collections.Counter() # numerator and denom of jointProbabilityTable entries
   occurrenceCounter = collections.Counter() # num occurrences based on sequence length
 
   # the range of the length of chord sequences to analyze
@@ -59,10 +60,16 @@ def generateProbabilityTables(chordData):
 
   # divide through by the number of occurrences to get the final joint probabilies
   for chordSequence in jointProbabilityTable.keys():
-    jointProbabilityTable[chordSequence] /= (float(occurrenceCounter[len(chordSequence)]))
+    # store the numerator and denominator of the probabilities to gage accuracy
+    jointSampleCounts[chordSequence] = (
+      jointProbabilityTable[chordSequence],
+      occurrenceCounter[len(chordSequence)]
+    )
+    jointProbabilityTable[chordSequence] = jointSampleCounts[chordSequence][0] / float(jointSampleCounts[chordSequence][1])
 
   # calculate conditional probabilities
   conditionalProbabilityTable = collections.Counter()
+  conditionalSampleCounts = collections.Counter() # numerator and denom of conditionalProbabilityTable entries
 
   # for each chord sequence with length > 1, find the conditional probability
   for chordSequence in jointProbabilityTable.keys():
@@ -70,19 +77,21 @@ def generateProbabilityTables(chordData):
       unknown = chordSequence[-1]
       observed = list(chordSequence)[:-1]
 
-      jointProbability = jointProbabilityTable[chordSequence] # P(observed, unknown)
-      # sum probabilities where the length and first events match the sequence
-      observedProbability = sum(
-        [prob
-          for (sequence, prob)
-          in jointProbabilityTable.iteritems()
+      jointSamples = jointSampleCounts[chordSequence][0]
+      # sum samples where the length and first events match the sequence
+      observedSamples = sum(
+        [sample[0]
+          for (sequence, sample)
+          in jointSampleCounts.iteritems()
           if len(sequence) == len(chordSequence)
             and list(sequence)[:-1] == observed
-        ]
-      ) # P(observed, anything) 
-      conditionalProbabilityTable[(unknown, tuple(observed))] = jointProbability / observedProbability
+        ]        
+      )
+      conditionalSampleCounts[(unknown, tuple(observed))] = (jointSamples, observedSamples)
+      # P(unknown | observed) = P(observed, unobserved) / P(observed, anything)
+      conditionalProbabilityTable[(unknown, tuple(observed))] = jointSamples / float(observedSamples)
 
-  return (jointProbabilityTable, conditionalProbabilityTable)  
+  return (jointProbabilityTable, conditionalProbabilityTable, jointSampleCounts, conditionalSampleCounts)  
 
 """
   Writes probability info from files specified by the command line
@@ -99,18 +108,20 @@ if __name__ == '__main__':
         # get probability tables
         out = open(sys.argv[2] + '/' + str(directory.split('/')[-1]) + '.txt', 'w+')
         chordData = readChordData(directory + '/' + file, transpose=int(sys.argv[3]))
-        (joint, conditional) = generateProbabilityTables(chordData)
+        (joint, conditional, jointSamples, conditionalSamples) = generateProbabilityTables(chordData)
 
         # write output to file
         print >> out, 'Joint probabilities: P(t, t+1, ..., t+n) (where t+1 occurs right after t)'
         for (chordSequence, probability) in joint.iteritems():
-          print >> out, '  P(', list(chordSequence), ') = ', probability
+          samples = jointSamples[chordSequence]
+          print >> out, '  P(', list(chordSequence), ') = ', probability, '(', samples[0], '/', samples[1], ')' 
 
         print >> out, '\n'
 
         print >> out, 'Conditional probabilities: P(t+n | t, t+1, ..., t+(n-1))'
         for ((unknown, observed), probability) in conditional.iteritems():
-          print >> out, '  P(', unknown, '|', list(observed), ') =', probability
+          samples = conditionalSamples[(unknown, observed)]
+          print >> out, '  P(', unknown, '|', list(observed), ') =', probability, '(', samples[0], '/', samples[1], ')'
 
         out.close()
 
