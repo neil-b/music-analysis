@@ -101,9 +101,15 @@ def visualizeConditional(probabilityTable, outFile=None):
   from matplotlib.patches import Rectangle
 
   xChords = list(set([x[1][0] for x in probabilityTable.keys() if len(x[1]) == 1])) # get unique values
+  # convert to Chord class for sorting, then convert back to string
+  xChords = [Chord(x) for x in xChords]
   xChords.sort()
+  xChords = [str(x) for x in xChords]
+
   yChords = list(set([x[0] for x in probabilityTable.keys() if len(x[1]) == 1]))
+  yChords = [Chord(x) for x in yChords]
   yChords.sort()
+  yChords = [str(x) for x in yChords]
 
   plt.rc('font', **{'size': 5})
   plt.xlabel('t+0')
@@ -141,7 +147,10 @@ def visualizeJoint(probabilityTable, outFile=None):
   from matplotlib.patches import Rectangle
 
   residentChords = [x[0] for x in probabilityTable.keys() if len(x) == 1]
+  # convert to Chord class for sorting, then convert back to string
+  residentChords = [Chord(x) for x in residentChords]
   residentChords.sort()
+  residentChords = [str(x) for x in residentChords]
 
   plt.rc('font', **{'size': 5})
   plt.xlabel('t+0')

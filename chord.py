@@ -59,6 +59,15 @@ class Chord:
   def __eq__(self, other):
     return str(self) == str(other)
 
+  def __lt__(self, other):
+    if self.rootClass == other.rootClass:
+      if self.rootIndex == other.rootIndex:
+        return self.quality < other.quality
+      else:
+        return self.rootIndex < other.rootIndex
+    else:
+      return self.rootClass < other.rootClass
+
   def transposed(self, numSemitones):
     newChord = Chord(str(self))
     # don't transpose if the note is nonstandard (eg 'X' or 'N')
