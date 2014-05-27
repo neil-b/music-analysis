@@ -67,6 +67,9 @@ class BeatReader:
       plt.show()
     else:
       plt.savefig(outFile)
+    # clear plot and axis
+    plt.clf()
+    plt.cla()
 
 if __name__ == '__main__':
   if len(sys.argv) != 3 and len(sys.argv) != 4:
