@@ -31,7 +31,7 @@ class Chord:
 
     chordString = chordString.split(':')
 
-    if len(chordString) != 2:
+    if len(chordString) != 1 and len(chordString) != 2:
       print chordString
       raise Exception('bad chordString')
 
@@ -47,10 +47,14 @@ class Chord:
     if self.rootIndex == None:
       raise Exception('bad chordString')
 
-    self.quality = chordString[1]
+    if len(chordString) == 2:
+      self.quality = chordString[1]
 
   def __str__(self):
-    return Chord.validRoots[self.rootClass][self.rootIndex][0] + ':' + self.quality
+    ret = Chord.validRoots[self.rootClass][self.rootIndex][0]
+    if self.quality != None:
+      ret += ':' + self.quality
+    return ret
 
   def __eq__(self, other):
     return str(self) == str(other)
@@ -68,6 +72,7 @@ if __name__ == '__main__':
   assert Chord('F:7').transposed(1) == Chord('F#:7')
   assert Chord('G:7').transposed(11) == Chord('F#:7')
   assert Chord('X:7') != Chord('A#:7')
+  assert Chord('N') != Chord('X')
   print 'All tests passed'
 
 
