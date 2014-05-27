@@ -94,6 +94,84 @@ def generateProbabilityTables(chordData):
   return (jointProbabilityTable, conditionalProbabilityTable, jointSampleCounts, conditionalSampleCounts)  
 
 """
+  Plot a table of P(t+1 | t+0) values. probabilityTable must be conditional
+"""
+def visualizeConditional(probabilityTable, outFile=None):
+  import matplotlib.pyplot as plt
+  from matplotlib.patches import Rectangle
+
+  xChords = list(set([x[1][0] for x in probabilityTable.keys() if len(x[1]) == 1])) # get unique values
+  xChords.sort()
+  yChords = list(set([x[0] for x in probabilityTable.keys() if len(x[1]) == 1]))
+  yChords.sort()
+
+  plt.rc('font', **{'size': 5})
+  plt.xlabel('t+0')
+  plt.ylabel('t+1')
+  plt.xticks(range(len(xChords)), xChords)
+  plt.yticks(range(len(yChords)), yChords)
+  plt.xlim(-0.5, len(xChords) - 0.5)
+  plt.ylim(-0.5, len(yChords) - 0.5)
+  plt.title('P(y-axis | x-axis) (columns sum to 1.0)')
+
+  gca = plt.gca()
+  for (x, chord0) in enumerate(xChords):
+    for (y, chord1) in enumerate(xChords):
+      prob = probabilityTable[(chord1, (chord0,))]
+      color = 'black'
+      if (prob == 0.0):
+        color = 'grey'
+      gca.text(x, y, str(round(prob, 3)), horizontalalignment='center', verticalalignment='center', color=color)
+      gca.add_patch(Rectangle((x-0.5, y-0.5), 1, 1, facecolor='none', edgecolor='b'))
+      gca.add_patch(Rectangle((x-0.5, y-0.5), 1, prob, facecolor='r'))
+
+  if outFile == None:
+    plt.show()
+  else:
+    plt.savefig(outFile)
+  # clear plot and axis 
+  plt.clf()
+  plt.cla()
+
+"""
+  Plot a table of P(t+0, t+1) values. probabilityTable must be joint
+"""
+def visualizeJoint(probabilityTable, outFile=None):
+  import matplotlib.pyplot as plt
+  from matplotlib.patches import Rectangle
+
+  residentChords = [x[0] for x in probabilityTable.keys() if len(x) == 1]
+  residentChords.sort()
+
+  plt.rc('font', **{'size': 5})
+  plt.xlabel('t+0')
+  plt.ylabel('t+1')
+  plt.xticks(range(len(residentChords)), residentChords)
+  plt.yticks(range(len(residentChords)), residentChords)
+  plt.xlim(-0.5, len(residentChords) - 0.5)
+  plt.ylim(-0.5, len(residentChords) - 0.5)
+  plt.title('P(x-axis, y-axis) (all entries sum to 1.0)')
+
+  gca = plt.gca()
+  for (x, chord0) in enumerate(residentChords):
+    for (y, chord1) in enumerate(residentChords):
+      prob = probabilityTable[(chord0, chord1)]
+      color = 'black'
+      if (prob == 0.0):
+        color = 'grey'
+      gca.text(x, y, str(round(prob, 3)), horizontalalignment='center', verticalalignment='center', color=color)
+      gca.add_patch(Rectangle((x-0.5, y-0.5), 1, 1, facecolor='none', edgecolor='b'))
+      gca.add_patch(Rectangle((x-0.5, y-0.5), 1, prob, facecolor='r'))
+
+  if outFile == None:
+    plt.show()
+  else:
+    plt.savefig(outFile)
+  # clear plot and axis 
+  plt.clf()
+  plt.cla()
+
+"""
   Writes probability info from files specified by the command line
 """
 if __name__ == '__main__':
@@ -106,7 +184,8 @@ if __name__ == '__main__':
     for (directory, subDirs, files) in dataDirectories:
       for file in files:
         # get probability tables
-        out = open(sys.argv[2] + '/' + str(directory.split('/')[-1]) + '.txt', 'w+')
+        outPrefix = sys.argv[2] + '/' + str(directory.split('/')[-1])
+        out = open(outPrefix + '_table.txt', 'w+')
         chordData = readChordData(directory + '/' + file, transpose=int(sys.argv[3]))
         (joint, conditional, jointSamples, conditionalSamples) = generateProbabilityTables(chordData)
 
@@ -122,6 +201,9 @@ if __name__ == '__main__':
         for ((unknown, observed), probability) in conditional.iteritems():
           samples = conditionalSamples[(unknown, observed)]
           print >> out, '  P(', unknown, '|', list(observed), ') =', probability, '(', samples[0], '/', samples[1], ')'
+
+        visualizeJoint(joint, outFile=(outPrefix + '_joint.pdf'))
+        visualizeConditional(conditional, outFile=(outPrefix + '_conditional.pdf'))
 
         out.close()
 
