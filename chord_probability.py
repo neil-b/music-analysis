@@ -111,7 +111,7 @@ def visualizeConditional(probabilityTable, outFile=None):
   yChords.sort()
   yChords = [str(x) for x in yChords]
 
-  plt.rc('font', **{'size': 5})
+  plt.rc('font', size=5)
   plt.xlabel('t+0')
   plt.ylabel('t+1')
   plt.xticks(range(len(xChords)), xChords)
@@ -152,7 +152,7 @@ def visualizeJoint(probabilityTable, outFile=None):
   residentChords.sort()
   residentChords = [str(x) for x in residentChords]
 
-  plt.rc('font', **{'size': 5})
+  plt.rc('font', size=5)
   plt.xlabel('t+0')
   plt.ylabel('t+1')
   plt.xticks(range(len(residentChords)), residentChords)

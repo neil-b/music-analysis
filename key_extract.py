@@ -20,10 +20,15 @@ def readPCPFile(path, norm=False):
 
     bassPCP = [float(x) for x in columns[2:14]]
     treblePCP = [float(x) for x in columns[14:26]]
-    if norm and numpy.linalg.norm(bassPCP) != 0:
-      bassPCP = bassPCP / numpy.linalg.norm(bassPCP)
-    if norm and numpy.linalg.norm(treblePCP) != 0:
-      treblePCP = treblePCP / numpy.linalg.norm(treblePCP)
+
+    # normalize if specified
+    if norm:
+      baseNorm = numpy.linalg.norm(bassPCP)
+      trebleNorm = numpy.linalg.norm(treblePCP)
+      if baseNorm:
+        bassPCP = bassPCP / baseNorm
+      if trebleNorm:
+        treblePCP = treblePCP / trebleNorm
 
     bassPCPVectors.extend(bassPCP)
     treblePCPVectors.extend(treblePCP)
