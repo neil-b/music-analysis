@@ -23,6 +23,21 @@ class Chord:
       ['X'],
     ]
   }
+  # mapping of root indices to unique colors. useful for graphs
+  colorMap = [
+    '#000088',
+    '#0000ff',
+    '#008800',
+    '#008888',
+    '#0088ff',
+    '#00ff00',
+    '#00ff88',
+    '#00ffff',
+    '#880000',
+    '#880088',
+    '#8800ff',
+    '#888800',
+  ]
 
   def __init__(self, chordString):
     self.rootClass = None # 'standard' or 'nonstandard'
@@ -74,6 +89,12 @@ class Chord:
     if self.rootClass == 'standard':
       newChord.rootIndex = (newChord.rootIndex + numSemitones) % len(Chord.validRoots[self.rootClass])
     return newChord
+
+  def toColor(self):
+    if self.rootClass != 'standard' or self.rootIndex > len(Chord.colorMap):
+      return '#000000'
+    else:
+      return Chord.colorMap[self.rootIndex]
 
 # some quick unit tests
 if __name__ == '__main__': 
