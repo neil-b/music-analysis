@@ -10,7 +10,7 @@ import math
 import sys
 import pydub
 import matplotlib.pyplot as plt
-
+import essentia.standard
 
 class BeatReader:
   tickFile = './tick.wav'
@@ -18,15 +18,36 @@ class BeatReader:
   def __init__(self, beatFile): 
     self.beatSets = []
     self.beatFile = beatFile
+    self.beatConfidence = [] # from text = None, from wav = [0, 1.0]
 
+    # add beats from beat (plaintext) file
     file = open(beatFile)
     for line in file:
       beats = []
       for time in line.split():
         beats.append(float(time))
       self.beatSets.append(beats)
+      self.beatConfidence.append(None)
     file.close()
 
+  """
+    Use a beatfinding algorithm to add the estimated beats of a wav file to
+    self.beatSets
+  """
+  def addBeatsFromWav(self, wavFile):
+    BTMF_MAX_CONFIDENCE = 5.32
+    loader = essentia.standard.MonoLoader(filename=wavFile)
+    audio = loader()
+    btmf = essentia.standard.BeatTrackerMultiFeature()
+    (beats, confidence) = btmf(audio)
+
+    self.beatSets.append(beats)
+    # scale confidence to [0, 1.0]
+    self.beatConfidence.append(confidence / BTMF_MAX_CONFIDENCE)
+
+  """
+    Create wav files of self.beatSets
+  """
   def createBeatFiles(self, overlayFile=None, outDirectory='./'):
     tickData = pydub.AudioSegment.from_wav(BeatReader.tickFile)
     for (counter, beat) in enumerate(self.beatSets):
@@ -52,16 +73,18 @@ class BeatReader:
       audioData.export(outDirectory + '/' + outFilePrefix + str(counter) + '.wav', format='wav')
 
   def createGraph(self, outFile=None):
-    x, y = [], []
     for (counter, beat) in enumerate(self.beatSets):
       for time in beat:
-        x.append(time)
-        y.append(counter)
+        color = 'red'
+        confidence = self.beatConfidence[counter]
+        if confidence != None:
+          brightness = '{0:x}'.format(int(confidence * 255))
+          color = '#' + (brightness * 3)
+        plt.plot(time, counter, 'ro', color=color)
     plt.xlabel('Seconds')
     plt.ylabel('Line number')
     plt.ylim((-0.5, len(self.beatSets)))
     plt.title(self.beatFile)
-    plt.plot(x, y, 'ro')
 
     if outFile == None:
       plt.show()
@@ -82,6 +105,7 @@ if __name__ == '__main__':
     if (len(sys.argv) == 3):
       br.createBeatFiles(outDirectory=sys.argv[2])
     else: 
+      br.addBeatsFromWav(sys.argv[3])
       br.createBeatFiles(outDirectory=sys.argv[2], overlayFile=sys.argv[3])
     br.createGraph(sys.argv[2] + '/graph.pdf')
 
